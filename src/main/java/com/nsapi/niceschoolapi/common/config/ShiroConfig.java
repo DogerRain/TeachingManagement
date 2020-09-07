@@ -36,13 +36,35 @@ public class ShiroConfig {
         ShiroFilterFactoryBean bean = new ShiroFilterFactoryBean();
         bean.setSecurityManager(securityManager(authRealm));
         bean.setSuccessUrl("/index");
+        //登录成功
         bean.setSuccessUrl("/home");
+        //登录失败
         bean.setLoginUrl("/home");
         Map<String,Filter> map = new HashMap();
+        //表示所有的 authc都要校验
         map.put("authc",new FormAuthenticationFilter());
         bean.setFilters(map);
+
+        //当运行一个Web应用程序时,Shiro将会创建一些有用的默认Filter实例,并自动地在[main]项中将它们置为可用自动地可用的默认的Filter实例是被
+        // DefaultFilter枚举类定义的,枚举的名称字段就是可供配置的名称
+        /**
+         * anon---------------org.apache.shiro.web.filter.authc.AnonymousFilter 没有参数，表示可以匿名使用。
+         * authc--------------org.apache.shiro.web.filter.authc.FormAuthenticationFilter 表示需要认证(登录)才能使用，没有参数
+         * authcBasic---------org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter 没有参数表示httpBasic认证
+         * logout-------------org.apache.shiro.web.filter.authc.LogoutFilter
+         * noSessionCreation--org.apache.shiro.web.filter.session.NoSessionCreationFilter
+         * perms--------------org.apache.shiro.web.filter.authz.PermissionAuthorizationFilter 参数可以写多个，多个时必须加上引号，并且参数之间用逗号分割，例如/admins/user/**=perms["user:add:*,user:modify:*"]，当有多个参数时必须每个参数都通过才通过，想当于isPermitedAll()方法。
+         * port---------------org.apache.shiro.web.filter.authz.PortFilter port[8081],当请求的url的端口不是8081是跳转到schemal://serverName:8081?queryString,其中schmal是协议http或https等，serverName是你访问的host,8081是url配置里port的端口，queryString是你访问的url里的？后面的参数。
+         * rest---------------org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter 根据请求的方法，相当于/admins/user/**=perms[user:method] ,其中method为post，get，delete等。
+         * roles--------------org.apache.shiro.web.filter.authz.RolesAuthorizationFilter 参数可以写多个，多个时必须加上引号，并且参数之间用逗号分割，当有多个参数时，例如admins/user/**=roles["admin,guest"],每个参数通过才算通过，相当于hasAllRoles()方法。
+         * ssl----------------org.apache.shiro.web.filter.authz.SslFilter 没有参数，表示安全的url请求，协议为https
+         * user---------------org.apache.shiro.web.filter.authz.UserFilter 没有参数表示必须存在用户，当登入操作时不做检查
+         */
+
+
         //配置访问权限
         LinkedHashMap<String, String> filterChainDefinitionMap = new LinkedHashMap();
+        // anon 表示不会被拦截的 url,即无需认证
         filterChainDefinitionMap.put("/","anon");
         filterChainDefinitionMap.put("/static/**","anon");
         filterChainDefinitionMap.put("/admin","anon");
@@ -58,7 +80,9 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/getCaptcha","anon");
         filterChainDefinitionMap.put("/anonCtrl/","anon");
         filterChainDefinitionMap.put("/sysRole/test","anon");
+        // /** 应该已经包括这个url了吧
         filterChainDefinitionMap.put("/systemLogout","authc");
+        //所有请求需要oauth2认证
         filterChainDefinitionMap.put("/**","authc");
         bean.setFilterChainDefinitionMap(filterChainDefinitionMap);
         return bean;

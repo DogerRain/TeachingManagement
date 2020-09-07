@@ -14,6 +14,8 @@ import org.apache.shiro.authc.*;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.authz.annotation.RequiresGuest;
+import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
@@ -39,22 +41,33 @@ public class AuthRealm extends AuthorizingRealm {
     @Lazy
     private UserService userService;
 
+
+    /**
+     *
+     * 这个方法是判断用户权限的，
+     *
+     * 不过不知道是哪里触发的
+     *
+     * @param principals
+     * @return
+     */
+
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
-        ShiroUser shiroUser = (ShiroUser)principals.getPrimaryPrincipal();
+        ShiroUser shiroUser = (ShiroUser) principals.getPrimaryPrincipal();
         User user = userService.findUserByLoginName(shiroUser.getloginName());
         SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
         Set<Role> roles = user.getRoleLists();
         Set<String> roleNames = new HashSet();
         for (Role role : roles) {
-            if(StringUtils.isNotBlank(role.getName())){
+            if (StringUtils.isNotBlank(role.getName())) {
                 roleNames.add(role.getName());
             }
         }
         Set<Menu> menus = user.getMenus();
-        Set<String> permissions =  new HashSet();
+        Set<String> permissions = new HashSet();
         for (Menu menu : menus) {
-            if(StringUtils.isNotBlank(menu.getPermission())){
+            if (StringUtils.isNotBlank(menu.getPermission())) {
                 permissions.add(menu.getPermission());
             }
         }
@@ -66,26 +79,33 @@ public class AuthRealm extends AuthorizingRealm {
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
         UsernamePasswordToken token = (UsernamePasswordToken) authenticationToken;
-        String username = (String)token.getPrincipal();
+        String username = (String) token.getPrincipal();
+
+
+        String password = new String((char[])token.getCredentials());
+
+        String username2 = new String(token.getUsername());
+        String password2 = new String(token.getPassword());
+
         User user = userService.findUserByLoginName(username);
-        if(user == null) {
+        if (user == null) {
             throw new UnknownAccountException();//没找到帐号
         }
-        if(Boolean.TRUE.equals(user.getLocked())) {
+        if (Boolean.TRUE.equals(user.getLocked())) {
             throw new LockedAccountException(); //帐号锁定
         }
-        ServletRequest request = ((WebSubject)SecurityUtils.getSubject()).getServletRequest();
-        HttpSession httpSession = ((HttpServletRequest)request).getSession();
+        ServletRequest request = ((WebSubject) SecurityUtils.getSubject()).getServletRequest();
+        HttpSession httpSession = ((HttpServletRequest) request).getSession();
         Object attribute = httpSession.getAttribute(LonginController.LOGIN_TYPE);
-        LonginController.LoginTypeEnum loginType = attribute == null ? null : (LonginController.LoginTypeEnum)attribute;
-        if(LonginController.LoginTypeEnum.ADMIN.equals(loginType)) {
-            if(Boolean.FALSE.equals(user.getAdminUser())) {
+        LonginController.LoginTypeEnum loginType = attribute == null ? null : (LonginController.LoginTypeEnum) attribute;
+        if (LonginController.LoginTypeEnum.ADMIN.equals(loginType)) {
+            if (Boolean.FALSE.equals(user.getAdminUser())) {
                 throw new UserTypeAccountException(); //帐号不是后台账户
             }
         }
         byte[] salt = Encodes.decodeHex(user.getSalt());
         SimpleAuthenticationInfo authenticationInfo = new SimpleAuthenticationInfo(
-                new ShiroUser(user.getId(),user.getLoginName(),user.getNickName(), user.getIcon()),
+                new ShiroUser(user.getId(), user.getLoginName(), user.getNickName(), user.getIcon()),
                 user.getPassword(), //密码
                 ByteSource.Util.bytes(salt),
                 getName()  //realm name
@@ -121,26 +141,28 @@ public class AuthRealm extends AuthorizingRealm {
         public String nickName;
         public String icon;
 
-        public ShiroUser(String id, String loginName, String nickName,String icon) {
+        public ShiroUser(String id, String loginName, String nickName, String icon) {
             this.id = id;
             this.loginName = loginName;
             this.nickName = nickName;
-            this.icon=icon;
+            this.icon = icon;
         }
 
         public String getloginName() {
             return loginName;
         }
+
         public String getNickName() {
             return nickName;
         }
+
         public String getIcon() {
             return icon;
         }
+
         public String getId() {
             return id;
         }
-
 
 
         /**
@@ -178,5 +200,12 @@ public class AuthRealm extends AuthorizingRealm {
                 return other.loginName == null;
             } else return loginName.equals(other.loginName);
         }
+    }
+
+    public static void main(String[] args) {
+//        b5d007f4b2f7542e
+
+        byte[] salt = Encodes.decodeHex("b5d007f4b2f7542e");
+        ByteSource byteSource = ByteSource.Util.bytes(salt);
     }
 }

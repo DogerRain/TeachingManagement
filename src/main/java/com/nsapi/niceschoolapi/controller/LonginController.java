@@ -137,22 +137,24 @@ public class LonginController {
             if(StringUtils.isBlank(username) || StringUtils.isBlank(password)){
                 return ResponseEntity.failure("用户名或者密码不能为空");
             }else if(StringUtils.isBlank(code)){
-                return ResponseEntity.failure("验证码不能为空");
+//                return ResponseEntity.failure("验证码不能为空");
             }
             HttpSession session = request.getSession();
             if(session == null){
                 return ResponseEntity.failure("session超时");
             }
-            String trueCode = (String)session.getAttribute(Constants.VALIDATE_CODE);
-            if(StringUtils.isBlank(trueCode)){
-                return ResponseEntity.failure("验证码超时");
-            }
-            if(StringUtils.isBlank(code) || !trueCode.toLowerCase().equals(code.toLowerCase())){
-                return ResponseEntity.failure("验证码错误");
-            }else {
+//            String trueCode = (String)session.getAttribute(Constants.VALIDATE_CODE);
+//            if(StringUtils.isBlank(trueCode)){
+//                return ResponseEntity.failure("验证码超时");
+//            }
+//            if(StringUtils.isBlank(code) || !trueCode.toLowerCase().equals(code.toLowerCase())){
+//                return ResponseEntity.failure("验证码错误");
+//            }
+            else {
                 Subject user = SecurityUtils.getSubject();
                 UsernamePasswordToken token = new UsernamePasswordToken(username,password,Boolean.valueOf(rememberMe));
                 try {
+                    //当调用ShiroHandler中的subject.login()的时候，会自动调用Realm中的doGetAuthenticationInfo方法。
                     user.login(token);
                 }catch (IncorrectCredentialsException e) {
                     errorMsg = "用户名密码错误!";
@@ -199,10 +201,6 @@ public class LonginController {
                 return ResponseEntity.failure(errorMsg);
             }
         }
-
-
-
-
 
     }
 
